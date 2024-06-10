@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services</title>
+</head>
+<body>
+    <h1 class="col-6 offset-3">Login</h1>
+<div class="row mt-3">
+    <div class="col-6 offset-3">
+        <form action="/login" method="POST" novalidate class="needs-validation">
+            <div class="mb-3">
+                <lable for="username" class="form-label">Username</lable>
+                <input name="username" id="username" type="text" class="form-control" required/>
+            </div>
+
+            <div class="mb-3">
+                <lable for="password" class="form-label">Password</lable>
+                <input name="password" id="password" type="password" class="form-control" required/>
+            </div>
+            
+            <button class="btn btn-success">Login</button><br/>
+            <p>New User?<i><a href="/signup">Sign Up</a></i></p>
+        </form>
+    </div>
+</div>   
+</body>
+</html>
