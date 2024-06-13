@@ -2,13 +2,20 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const path = require("path");
-const Listing = require("./models/info.js");
 const session = require("express-session");
+const ejsMate=require("ejs-mate");
+
+const ExpressError = require("./utils/ExpressError.js");
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user.js");
-const Info = require("./models/info.js");
+
+const listingRouter = require("./routes/listings.js");
+const userRouter = require("./routes/user.js");
+
+const methodOverride=require("method-override");
+const MongoStore = require('connect-mongo');
 
 const MONGO_URL = "mongodb://127.0.0.1:27017/Services";
 
@@ -24,16 +31,17 @@ async function main() {
     await mongoose.connect(MONGO_URL);
 }
 
-// Middleware settings
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(methodOverride("_method"));
+app.engine("ejs",ejsMate);
+app.use(express.static(path.join(__dirname, "/public")));
 
 // Session configuration
 const sessionOptions = {
-    secret: "yourSecret",
+    secret: "greatJob",
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false }
@@ -56,64 +64,22 @@ app.use((req, res, next) => {
     next();
 });
 
-// Authentication routes
-app.get("/login", (req, res) => {
-    res.render("authentication/login");
+// store.on("error",() => {
+//     console.log("Error in Mongo Session Store", err);
+// });
+
+
+app.use("/listings",listingRouter);
+app.use("/",userRouter);
+
+app.all("*",(req,res,next)=>{
+    next (new ExpressError(404,"page not found!"));
 });
 
-app.post("/login", passport.authenticate("local", {
-    successRedirect: "/listings/newRegis",
-    if(err){
-    // failureFlash: true
-    req.flash("Credentials might be wrong or u r not signed up");
-    failureRedirect: "/login";}
-}));
-
-app.get("/signup", (req, res) => {
-    res.render("authentication/signup");
-});
-
-app.post("/signup", async (req, res, next) => {
-    try {
-        const { username, password,email } = req.body;
-        const user = new User({ username,email });
-        const registeredUser = await User.register(user, password);
-        req.login(registeredUser, err => {
-            if (err) return next(err);
-            req.flash("success", "Welcome to Services");
-            res.redirect("/listings/newRegis");
-        });
-    } catch (e) {
-        req.flash("error", e.message);
-        res.redirect("/signup");
-    }
-});
-
-app.get("/logout", (req, res, next) => {
-    req.logout(err => {
-        if (err) return next(err);
-        req.flash("success", "Goodbye!");
-        res.redirect("/");
-    });
-});
-
-app.get("/listings/newRegis", (req, res) => {
-    if (!req.isAuthenticated()) {
-        req.flash("error", "You need to be logged in to apply for the opportunity.");
-        return res.redirect("/login");
-    }
-    res.render("listings/newRegis");
-});
-
-app.post("/listings/front", async (req, res) => {
-    const newListing = new Listing(req.body.listing);
-    await newListing.save();
-    res.redirect("/listings");
-});
-
-app.get("/listings", async (req, res) => {
-    const listings = await Listing.find({});
-    res.render("listings/front", { listings });
+app.use((err,req,res,next)=>{
+    let{ statusCode = 500, message = "something went wrong!" } =err;
+    res.status(statusCode).render("error.ejs",{ message });
+    //res.status(statusCode).send(message);
 });
 
 app.get("/", (req, res) => {
